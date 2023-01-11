@@ -7,7 +7,7 @@ from itertools import product
 
 types = ["Bug", "Dark", "Dragon", "Electric", "Fairy", "Fighting", "Fire", "Flying", "Ghost", "Grass", "Ground", "Ice", "Normal", "Poison", "Psychic", "Rock", "Steel", "Water"]
 pokemon_data = {pokemon.Pokes[poke]["species"]:pokemon.Pokes[poke] for poke in pokemon.Pokes}
-print(pokemon_data)
+# print(pokemon_data)
 
 def isSuperEffective(atktype, poke):
     deftypes = pokemon_data[poke]["types"]
@@ -145,12 +145,13 @@ def getEffectivenessModifier(a, d):
     return 1
 
 usagedata = {}
-currentDate = "2017-08"
+currentDate = "2022-12"
 tier = "gen6ou-0"
+num_moves = 5
+
 pm = urllib3.PoolManager()
 usagetext = str(pm.request("GET", "http://www.smogon.com/stats/" + currentDate + "/" + tier + ".txt").data)
 lines = usagetext.split("\\n")
-pprint(lines)
 for line in lines[5:-2]:
     poke = str.strip(line[10:28]) #gets name of pokemon
     if poke == "NidoranM":
@@ -158,9 +159,8 @@ for line in lines[5:-2]:
     elif poke == "NidoranF":
         poke = "Nidoran-F"
     usage = str.strip(line[30:39]) #gets usage percentage
-    print((poke, usage))
+    # print((poke, usage))
     usagedata[poke] = usage
-print(usagedata)
 
 
 file = open("output.txt", "w")
@@ -171,9 +171,10 @@ visited_combos = set()
 #     for a2 in types:
 #         for a3 in types:
 #             for a4 in types:
-all_combos = list(product(types, types, types, types))
-for a1, a2, a3, a4 in all_combos:
-    combo = frozenset([a1, a2, a3, a4])
+product_input = [types] * num_moves
+all_combos = list(product(*product_input))
+for move_tuple in all_combos:
+    combo = frozenset(move_tuple)
     if combo in visited_combos:
         continue
     visited_combos.add(combo)
@@ -181,9 +182,11 @@ for a1, a2, a3, a4 in all_combos:
     beatenPokemon = []
     #file.write("\n" + a1 + ", " + a2 + ", " + a3 + ", " + a4)
     for p in usagedata:
-        if isSuperEffective(a1, p) or isSuperEffective(a2, p) or isSuperEffective(a3, p)or isSuperEffective(a4, p):
-            beatenPokemon.append(p)
-            score += float(usagedata[p])
+        for move in move_tuple:
+            if isSuperEffective(move, p):
+                beatenPokemon.append(p)
+                score += float(usagedata[p])
+                break
     #file.write("\nResults: " + str(len(beatenPokemon)) + " out of " + str(len(usagedata)) + ", " + str(score) + " points")
     results.append(tuple([combo, score, tuple(beatenPokemon)]))
 results_list = list(results)
